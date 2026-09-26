@@ -140,7 +140,6 @@ spec:
     path: '${repo_path_escaped}'
   destination:
     server: https://kubernetes.default.svc
-    namespace: argocd
   syncPolicy:
     automated:
       prune: true
