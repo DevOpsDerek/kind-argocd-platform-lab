@@ -25,6 +25,20 @@ check_prerequisites() {
   require_cmd helm
 }
 
+validate_bootstrap_inputs() {
+  for value_name in BOOTSTRAP_REPO_URL BOOTSTRAP_REPO_REVISION BOOTSTRAP_REPO_PATH; do
+    local value="${!value_name}"
+    if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
+      echo "error: ${value_name} must be single-line text" >&2
+      exit 1
+    fi
+  done
+}
+
+yaml_escape_single_quoted() {
+  sed "s/'/''/g"
+}
+
 cluster_exists() {
   kind get clusters 2>/dev/null | grep -Fxq "${KIND_CLUSTER_NAME}"
 }
@@ -57,6 +71,15 @@ install_argocd() {
 }
 
 bootstrap_gitops() {
+  validate_bootstrap_inputs
+
+  local repo_url_escaped
+  local repo_revision_escaped
+  local repo_path_escaped
+  repo_url_escaped="$(printf "%s" "${BOOTSTRAP_REPO_URL}" | yaml_escape_single_quoted)"
+  repo_revision_escaped="$(printf "%s" "${BOOTSTRAP_REPO_REVISION}" | yaml_escape_single_quoted)"
+  repo_path_escaped="$(printf "%s" "${BOOTSTRAP_REPO_PATH}" | yaml_escape_single_quoted)"
+
   kubectl --context "${KUBE_CONTEXT}" apply -f - <<EOF2
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -66,9 +89,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: ${BOOTSTRAP_REPO_URL}
-    targetRevision: ${BOOTSTRAP_REPO_REVISION}
-    path: ${BOOTSTRAP_REPO_PATH}
+    repoURL: '${repo_url_escaped}'
+    targetRevision: '${repo_revision_escaped}'
+    path: '${repo_path_escaped}'
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
