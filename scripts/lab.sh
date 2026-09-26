@@ -73,6 +73,10 @@ install_argocd() {
     --for=condition=Established \
     crd/applications.argoproj.io \
     --timeout=180s
+  kubectl --context "${KUBE_CONTEXT}" wait \
+    --for=condition=Established \
+    crd/appprojects.argoproj.io \
+    --timeout=180s
 
   kubectl --context "${KUBE_CONTEXT}" -n argocd rollout status \
     statefulset/argocd-application-controller \
@@ -126,12 +130,16 @@ verify_lab() {
   local attempts=60
   local sync_status=""
   local health_status=""
+  local managed_resource_ready="false"
   while (( attempts > 0 )); do
     sync_status="$(kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
     health_status="$(kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+    if kubectl --context "${KUBE_CONTEXT}" -n platform-system get configmap platform-lab-info >/dev/null 2>&1; then
+      managed_resource_ready="true"
+    fi
 
-    if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" ]]; then
-      echo "root-app is Synced and Healthy"
+    if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" && "${managed_resource_ready}" == "true" ]]; then
+      echo "root-app is Synced and Healthy; managed platform resource is present"
       echo "verification complete"
       return
     fi
@@ -140,7 +148,7 @@ verify_lab() {
     sleep 5
   done
 
-  echo "error: root-app did not become Synced/Healthy (sync=${sync_status:-unknown}, health=${health_status:-unknown})" >&2
+  echo "error: verification timed out (sync=${sync_status:-unknown}, health=${health_status:-unknown}, platform_configmap=${managed_resource_ready})" >&2
   exit 1
 }
 
