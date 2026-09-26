@@ -44,7 +44,7 @@ check_prerequisites() {
   require_cmd kubectl
   require_cmd helm
 
-  check_min_version "kind" "$(kind version --short | sed -E 's/^kind v?([0-9.]+).*/\1/')" "${MIN_KIND_VERSION}"
+  check_min_version "kind" "$(kind version --short | sed -E 's/^[^0-9]*([0-9.]+).*/\1/')" "${MIN_KIND_VERSION}"
   check_min_version "kubectl" "$(kubectl version --client -o jsonpath='{.clientVersion.gitVersion}' | sed 's/^v//')" "${MIN_KUBECTL_VERSION}"
   check_min_version "helm" "$(helm version --template '{{.Version}}' | sed 's/^v//')" "${MIN_HELM_VERSION}"
 }

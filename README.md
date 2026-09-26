@@ -41,9 +41,9 @@ This will:
 
 ## Commands
 ```bash
-BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" ./scripts/lab.sh create
-./scripts/lab.sh verify
-./scripts/lab.sh teardown
+BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" bash ./scripts/lab.sh create
+bash ./scripts/lab.sh verify
+bash ./scripts/lab.sh teardown
 ```
 
 All commands are safe to run repeatedly.
