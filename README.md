@@ -29,8 +29,7 @@ Recommended minimum host resources for smooth local use:
 From the repository root:
 
 ```bash
-chmod +x ./scripts/lab.sh
-./scripts/lab.sh create
+bash ./scripts/lab.sh create
 ```
 
 This will:

@@ -68,6 +68,11 @@ install_argocd() {
     --values "${ROOT_DIR}/helm/argocd-values.yaml" \
     --wait \
     --timeout 10m
+
+  kubectl --context "${KUBE_CONTEXT}" wait \
+    --for=condition=Established \
+    crd/applications.argoproj.io \
+    --timeout=180s
 }
 
 bootstrap_gitops() {
