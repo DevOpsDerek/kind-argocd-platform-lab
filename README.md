@@ -30,6 +30,7 @@ From the repository root:
 
 ```bash
 BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" \
+BOOTSTRAP_REPO_PATH="gitops/root" \
 bash ./scripts/lab.sh create
 ```
 
@@ -41,15 +42,18 @@ This will:
 
 ## Commands
 ```bash
-BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" bash ./scripts/lab.sh create
+BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" BOOTSTRAP_REPO_PATH="gitops/root" bash ./scripts/lab.sh create
 bash ./scripts/lab.sh verify
 bash ./scripts/lab.sh teardown
 ```
 
+`verify` is intended to run after `create`, because it checks the bootstrapped `root-app`.
+
 All commands are safe to run repeatedly.
 
 ## Bootstrap overrides (no file edits)
-`BOOTSTRAP_REPO_URL` is required and should point to a Git repository ArgoCD can access.
+`BOOTSTRAP_REPO_URL` and `BOOTSTRAP_REPO_PATH` are required.
+`BOOTSTRAP_REPO_URL` should point to a Git repository ArgoCD can access, and `BOOTSTRAP_REPO_PATH` should be the root-app path in that repo.
 You can override the full bootstrap source without modifying tracked files:
 
 ```bash

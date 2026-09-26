@@ -9,7 +9,7 @@ ARGOCD_CHART_VERSION="${ARGOCD_CHART_VERSION:-7.7.11}"
 ARGOCD_CHART_REF="${ARGOCD_CHART_REF:-oci://ghcr.io/argoproj/argo-helm/argo-cd}"
 BOOTSTRAP_REPO_URL="${BOOTSTRAP_REPO_URL:-}"
 BOOTSTRAP_REPO_REVISION="${BOOTSTRAP_REPO_REVISION:-main}"
-BOOTSTRAP_REPO_PATH="${BOOTSTRAP_REPO_PATH:-gitops/root}"
+BOOTSTRAP_REPO_PATH="${BOOTSTRAP_REPO_PATH:-}"
 KUBE_CONTEXT="kind-${KIND_CLUSTER_NAME}"
 MIN_KIND_VERSION="${MIN_KIND_VERSION:-0.23.0}"
 MIN_KUBECTL_VERSION="${MIN_KUBECTL_VERSION:-1.30.0}"
@@ -54,6 +54,10 @@ validate_bootstrap_inputs() {
     echo "error: BOOTSTRAP_REPO_URL is required (set an accessible Git repository URL)" >&2
     exit 1
   fi
+  if [[ -z "${BOOTSTRAP_REPO_PATH}" ]]; then
+    echo "error: BOOTSTRAP_REPO_PATH is required (set the repo path to bootstrap, for example gitops/root)" >&2
+    exit 1
+  fi
 
   for value_name in BOOTSTRAP_REPO_URL BOOTSTRAP_REPO_REVISION BOOTSTRAP_REPO_PATH; do
     local value="${!value_name}"
@@ -91,7 +95,6 @@ install_argocd() {
     --kube-context "${KUBE_CONTEXT}" \
     --namespace argocd \
     --version "${ARGOCD_CHART_VERSION}" \
-    --set crds.install=true \
     --values "${ROOT_DIR}/helm/argocd-values.yaml" \
     --wait \
     --timeout 10m
