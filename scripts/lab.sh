@@ -38,13 +38,29 @@ check_min_version() {
   fi
 }
 
+kind_cli_version() {
+  local output
+  output="$(kind version --short)"
+
+  local parsed
+  parsed="$(printf "%s" "${output}" | sed -nE 's/.*kind v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')"
+  if [[ -z "${parsed}" ]]; then
+    parsed="$(printf "%s" "${output}" | sed -nE 's/.*v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')"
+  fi
+  if [[ -z "${parsed}" ]]; then
+    echo "error: unable to parse kind version from: ${output}" >&2
+    exit 1
+  fi
+  printf "%s" "${parsed}"
+}
+
 check_prerequisites() {
   require_cmd docker
   require_cmd kind
   require_cmd kubectl
   require_cmd helm
 
-  check_min_version "kind" "$(kind version --short | sed -E 's/^[^0-9]*([0-9.]+).*/\1/')" "${MIN_KIND_VERSION}"
+  check_min_version "kind" "$(kind_cli_version)" "${MIN_KIND_VERSION}"
   check_min_version "kubectl" "$(kubectl version --client -o jsonpath='{.clientVersion.gitVersion}' | sed 's/^v//')" "${MIN_KUBECTL_VERSION}"
   check_min_version "helm" "$(helm version --template '{{.Version}}' | sed 's/^v//')" "${MIN_HELM_VERSION}"
 }
@@ -161,7 +177,15 @@ verify_lab() {
 
   kubectl --context "${KUBE_CONTEXT}" wait node --all --for=condition=Ready --timeout=180s
   kubectl --context "${KUBE_CONTEXT}" -n argocd rollout status deploy/argocd-server --timeout=180s
-  kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app >/dev/null
+  if ! kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app >/dev/null 2>&1; then
+    if [[ -n "${BOOTSTRAP_REPO_URL}" && -n "${BOOTSTRAP_REPO_PATH}" ]]; then
+      echo "root-app not found; applying bootstrap application from provided BOOTSTRAP_* inputs"
+      bootstrap_gitops
+    else
+      echo "error: root-app not found. Run create first, or provide BOOTSTRAP_REPO_URL and BOOTSTRAP_REPO_PATH when running verify." >&2
+      exit 1
+    fi
+  fi
 
   local attempts=60
   local sync_status=""

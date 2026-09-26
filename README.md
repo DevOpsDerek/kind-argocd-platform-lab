@@ -48,6 +48,7 @@ bash ./scripts/lab.sh teardown
 ```
 
 `verify` is intended to run after `create`, because it checks the bootstrapped `root-app`.
+If `root-app` is missing, run `verify` with `BOOTSTRAP_REPO_URL` and `BOOTSTRAP_REPO_PATH` to re-apply bootstrap.
 
 All commands are safe to run repeatedly.
 
