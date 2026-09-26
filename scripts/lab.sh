@@ -196,7 +196,6 @@ teardown_lab() {
 }
 
 create_lab() {
-  check_prerequisites
   create_cluster
   install_argocd
   bootstrap_gitops
@@ -216,6 +215,7 @@ EOF2
 
 case "${1:-}" in
   create)
+    check_prerequisites
     create_lab
     ;;
   verify)
