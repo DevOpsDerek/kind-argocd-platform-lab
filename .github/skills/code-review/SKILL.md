@@ -78,7 +78,7 @@ claims on files that actually exist; do not assume this repository has a
 
 - Treat Git as the declared source of truth. Flag routine manual
   `kubectl apply` workflows that bypass Argo CD reconciliation.
-- Check whether automated sync, prune, and self-heal behavior is deliberate;
+- Check whether auto-sync, prune, and self-heal behavior is deliberate;
   scrutinize prune or deletion behavior for unintended impact.
 - Verify Helm chart and dependency versions are pinned, and that relevant
   Helm templates, Kustomize overlays, or manifests render and validate when
