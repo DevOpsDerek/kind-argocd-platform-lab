@@ -73,6 +73,10 @@ install_argocd() {
     --for=condition=Established \
     crd/applications.argoproj.io \
     --timeout=180s
+
+  kubectl --context "${KUBE_CONTEXT}" -n argocd rollout status \
+    statefulset/argocd-application-controller \
+    --timeout=180s
 }
 
 bootstrap_gitops() {
