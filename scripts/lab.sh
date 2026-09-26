@@ -59,7 +59,7 @@ install_argocd() {
   kubectl --context "${KUBE_CONTEXT}" create namespace argocd --dry-run=client -o yaml | kubectl --context "${KUBE_CONTEXT}" apply -f -
 
   helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
-  helm repo update >/dev/null
+  helm repo update argo >/dev/null
 
   helm upgrade --install argocd argo/argo-cd \
     --kube-context "${KUBE_CONTEXT}" \
