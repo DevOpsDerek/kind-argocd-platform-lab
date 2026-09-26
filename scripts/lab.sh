@@ -143,6 +143,7 @@ spec:
     path: '${repo_path_escaped}'
   destination:
     server: https://kubernetes.default.svc
+    namespace: platform-system
   syncPolicy:
     automated:
       prune: true
