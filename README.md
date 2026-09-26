@@ -41,7 +41,7 @@ This will:
 
 ## Commands
 ```bash
-./scripts/lab.sh create
+BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" ./scripts/lab.sh create
 ./scripts/lab.sh verify
 ./scripts/lab.sh teardown
 ```

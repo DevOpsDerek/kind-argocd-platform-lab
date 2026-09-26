@@ -91,6 +91,7 @@ install_argocd() {
     --kube-context "${KUBE_CONTEXT}" \
     --namespace argocd \
     --version "${ARGOCD_CHART_VERSION}" \
+    --set crds.install=true \
     --values "${ROOT_DIR}/helm/argocd-values.yaml" \
     --wait \
     --timeout 10m
