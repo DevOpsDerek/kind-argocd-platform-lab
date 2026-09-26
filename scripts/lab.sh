@@ -9,6 +9,7 @@ ARGOCD_CHART_VERSION="${ARGOCD_CHART_VERSION:-7.7.11}"
 BOOTSTRAP_REPO_URL="${BOOTSTRAP_REPO_URL:-https://github.com/DevOpsDerek/kind-argocd-platform-lab.git}"
 BOOTSTRAP_REPO_REVISION="${BOOTSTRAP_REPO_REVISION:-main}"
 BOOTSTRAP_REPO_PATH="${BOOTSTRAP_REPO_PATH:-gitops/root}"
+KUBE_CONTEXT="kind-${KIND_CLUSTER_NAME}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
@@ -41,12 +42,13 @@ create_cluster() {
 }
 
 install_argocd() {
-  kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+  kubectl --context "${KUBE_CONTEXT}" create namespace argocd --dry-run=client -o yaml | kubectl --context "${KUBE_CONTEXT}" apply -f -
 
   helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
   helm repo update >/dev/null
 
   helm upgrade --install argocd argo/argo-cd \
+    --kube-context "${KUBE_CONTEXT}" \
     --namespace argocd \
     --version "${ARGOCD_CHART_VERSION}" \
     --values "${ROOT_DIR}/helm/argocd-values.yaml" \
@@ -55,7 +57,7 @@ install_argocd() {
 }
 
 bootstrap_gitops() {
-  kubectl apply -f - <<EOF2
+  kubectl --context "${KUBE_CONTEXT}" apply -f - <<EOF2
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -85,16 +87,16 @@ verify_lab() {
     exit 1
   fi
 
-  kubectl wait node --all --for=condition=Ready --timeout=180s
-  kubectl -n argocd rollout status deploy/argocd-server --timeout=180s
-  kubectl -n argocd get application root-app >/dev/null
+  kubectl --context "${KUBE_CONTEXT}" wait node --all --for=condition=Ready --timeout=180s
+  kubectl --context "${KUBE_CONTEXT}" -n argocd rollout status deploy/argocd-server --timeout=180s
+  kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app >/dev/null
 
   local attempts=60
   local sync_status=""
   local health_status=""
   while (( attempts > 0 )); do
-    sync_status="$(kubectl -n argocd get application root-app -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
-    health_status="$(kubectl -n argocd get application root-app -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+    sync_status="$(kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+    health_status="$(kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
 
     if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" ]]; then
       echo "root-app is Synced and Healthy"
