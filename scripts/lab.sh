@@ -168,6 +168,8 @@ verify_lab() {
     health_status="$(kubectl --context "${KUBE_CONTEXT}" -n argocd get application root-app -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
     if kubectl --context "${KUBE_CONTEXT}" -n platform-system get configmap platform-lab-info >/dev/null 2>&1; then
       managed_resource_ready="true"
+    else
+      managed_resource_ready="false"
     fi
 
     if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" && "${managed_resource_ready}" == "true" ]]; then
