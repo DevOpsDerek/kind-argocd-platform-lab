@@ -23,7 +23,7 @@ Recommended minimum host resources for smooth local use:
 ## Pinned versions
 - kind node image: `kindest/node:v1.31.0`
 - ArgoCD Helm chart: `argo/argo-cd` `7.7.11`
-- ArgoCD image tag: `v2.13.3`
+- ArgoCD component images: chart defaults from pinned chart `7.7.11` (kept in sync)
 
 ## Quick start (clean setup)
 From the repository root:
