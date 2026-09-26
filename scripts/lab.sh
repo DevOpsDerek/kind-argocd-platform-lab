@@ -6,14 +6,34 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 KIND_CLUSTER_NAME="${KIND_CLUSTER_NAME:-argocd-lab}"
 KIND_NODE_IMAGE="${KIND_NODE_IMAGE:-kindest/node:v1.31.0}"
 ARGOCD_CHART_VERSION="${ARGOCD_CHART_VERSION:-7.7.11}"
-BOOTSTRAP_REPO_URL="${BOOTSTRAP_REPO_URL:-https://github.com/DevOpsDerek/kind-argocd-platform-lab.git}"
+ARGOCD_CHART_REF="${ARGOCD_CHART_REF:-oci://ghcr.io/argoproj/argo-helm/argo-cd}"
+BOOTSTRAP_REPO_URL="${BOOTSTRAP_REPO_URL:-}"
 BOOTSTRAP_REPO_REVISION="${BOOTSTRAP_REPO_REVISION:-main}"
 BOOTSTRAP_REPO_PATH="${BOOTSTRAP_REPO_PATH:-gitops/root}"
 KUBE_CONTEXT="kind-${KIND_CLUSTER_NAME}"
+MIN_KIND_VERSION="${MIN_KIND_VERSION:-0.23.0}"
+MIN_KUBECTL_VERSION="${MIN_KUBECTL_VERSION:-1.30.0}"
+MIN_HELM_VERSION="${MIN_HELM_VERSION:-3.14.0}"
 
 require_cmd() {
   if ! command -v "$1" >/dev/null 2>&1; then
     echo "error: required command not found: $1" >&2
+    exit 1
+  fi
+}
+
+version_gte() {
+  local current="$1"
+  local required="$2"
+  [[ "$(printf "%s\n%s\n" "${required}" "${current}" | sort -V | head -n1)" == "${required}" ]]
+}
+
+check_min_version() {
+  local tool_name="$1"
+  local current="$2"
+  local required="$3"
+  if ! version_gte "${current}" "${required}"; then
+    echo "error: ${tool_name} ${required}+ is required (found ${current})" >&2
     exit 1
   fi
 }
@@ -23,9 +43,18 @@ check_prerequisites() {
   require_cmd kind
   require_cmd kubectl
   require_cmd helm
+
+  check_min_version "kind" "$(kind version --short | sed -E 's/^kind v?([0-9.]+).*/\1/')" "${MIN_KIND_VERSION}"
+  check_min_version "kubectl" "$(kubectl version --client -o jsonpath='{.clientVersion.gitVersion}' | sed 's/^v//')" "${MIN_KUBECTL_VERSION}"
+  check_min_version "helm" "$(helm version --template '{{.Version}}' | sed 's/^v//')" "${MIN_HELM_VERSION}"
 }
 
 validate_bootstrap_inputs() {
+  if [[ -z "${BOOTSTRAP_REPO_URL}" ]]; then
+    echo "error: BOOTSTRAP_REPO_URL is required (set an accessible Git repository URL)" >&2
+    exit 1
+  fi
+
   for value_name in BOOTSTRAP_REPO_URL BOOTSTRAP_REPO_REVISION BOOTSTRAP_REPO_PATH; do
     local value="${!value_name}"
     if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
@@ -58,10 +87,7 @@ create_cluster() {
 install_argocd() {
   kubectl --context "${KUBE_CONTEXT}" create namespace argocd --dry-run=client -o yaml | kubectl --context "${KUBE_CONTEXT}" apply -f -
 
-  helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
-  helm repo update >/dev/null
-
-  helm upgrade --install argocd argo/argo-cd \
+  helm upgrade --install argocd "${ARGOCD_CHART_REF}" \
     --kube-context "${KUBE_CONTEXT}" \
     --namespace argocd \
     --version "${ARGOCD_CHART_VERSION}" \

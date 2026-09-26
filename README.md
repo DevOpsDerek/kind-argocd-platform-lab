@@ -22,13 +22,14 @@ Recommended minimum host resources for smooth local use:
 
 ## Pinned versions
 - kind node image: `kindest/node:v1.31.0`
-- ArgoCD Helm chart: `argo/argo-cd` `7.7.11`
+- ArgoCD Helm chart reference: `oci://ghcr.io/argoproj/argo-helm/argo-cd` + version `7.7.11`
 - ArgoCD component images: chart defaults from pinned chart `7.7.11` (kept in sync)
 
 ## Quick start (clean setup)
 From the repository root:
 
 ```bash
+BOOTSTRAP_REPO_URL="https://github.com/<you>/<repo>.git" \
 bash ./scripts/lab.sh create
 ```
 
@@ -48,7 +49,8 @@ This will:
 All commands are safe to run repeatedly.
 
 ## Bootstrap overrides (no file edits)
-You can override bootstrap source without modifying tracked files:
+`BOOTSTRAP_REPO_URL` is required and should point to a Git repository ArgoCD can access.
+You can override the full bootstrap source without modifying tracked files:
 
 ```bash
 BOOTSTRAP_REPO_URL="https://github.com/<you>/<fork>.git" \
