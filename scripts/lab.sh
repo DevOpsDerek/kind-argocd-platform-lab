@@ -87,8 +87,27 @@ verify_lab() {
 
   kubectl wait node --all --for=condition=Ready --timeout=180s
   kubectl -n argocd rollout status deploy/argocd-server --timeout=180s
-  kubectl -n argocd get application root-app
-  echo "verification complete"
+  kubectl -n argocd get application root-app >/dev/null
+
+  local attempts=60
+  local sync_status=""
+  local health_status=""
+  while (( attempts > 0 )); do
+    sync_status="$(kubectl -n argocd get application root-app -o jsonpath='{.status.sync.status}' 2>/dev/null || true)"
+    health_status="$(kubectl -n argocd get application root-app -o jsonpath='{.status.health.status}' 2>/dev/null || true)"
+
+    if [[ "${sync_status}" == "Synced" && "${health_status}" == "Healthy" ]]; then
+      echo "root-app is Synced and Healthy"
+      echo "verification complete"
+      return
+    fi
+
+    attempts=$(( attempts - 1 ))
+    sleep 5
+  done
+
+  echo "error: root-app did not become Synced/Healthy (sync=${sync_status:-unknown}, health=${health_status:-unknown})" >&2
+  exit 1
 }
 
 teardown_lab() {

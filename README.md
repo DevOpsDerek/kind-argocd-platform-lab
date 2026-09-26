@@ -26,7 +26,7 @@ Recommended minimum host resources for smooth local use:
 - ArgoCD image tag: `v2.13.3`
 
 ## Quick start (clean setup)
-From repository root (`/home/runner/work/kind-argocd-platform-lab/kind-argocd-platform-lab`):
+From the repository root:
 
 ```bash
 chmod +x ./scripts/lab.sh
