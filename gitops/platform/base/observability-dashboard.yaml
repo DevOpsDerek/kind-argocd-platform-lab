@@ -113,6 +113,34 @@ data:
           ],
           "title": "Collector export failures",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "id": 4,
+          "targets": [
+            {
+              "expr": "sum(lab_gen)",
+              "legendFormat": "generated workload metric",
+              "refId": "A"
+            }
+          ],
+          "title": "Synthetic workload metric",
+          "type": "timeseries"
         }
       ],
       "schemaVersion": 39,

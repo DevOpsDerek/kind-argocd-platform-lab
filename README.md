@@ -124,6 +124,11 @@ Expected: both Pods become Ready. This demonstrates policy-compliant tenant work
 ### Isolation caveat
 These namespace controls demonstrate practical RBAC and admission guardrails for a local lab, but they are **not hard isolation** and are **not equivalent to dedicated clusters**. Cluster-scoped components, node/kernel sharing, and control-plane trust boundaries remain shared.
 
+## OpenTelemetry observability (BG-009)
+The platform deploys a pinned Prometheus/Grafana stack and OpenTelemetry Collector through ArgoCD. Two `telemetrygen` workloads continuously send sample traces and metrics over OTLP to the collector. Prometheus scrapes collector pipeline metrics and exported OTLP metrics; Grafana provisions a telemetry pipeline dashboard with signal throughput and export-failure panels.
+
+After `bash ./scripts/lab.sh create` completes and the ArgoCD Applications are healthy, follow the [observability runbook](docs/observability-runbook.md) to verify signal flow, inspect the dashboard, and troubleshoot failures. The path is local-only: traces are written to the collector debug output, and no Azure account, credentials, or live Azure services are required. The runbook maps these signals to Azure Monitor and Application Insights concepts.
+
 ## Secret handling
 Do **not** commit plaintext secrets.
 
