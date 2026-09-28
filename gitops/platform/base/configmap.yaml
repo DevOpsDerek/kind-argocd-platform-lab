@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-lab-info
+  namespace: platform-system
+data:
+  managed-by: argocd
+  purpose: local-kind-lab
