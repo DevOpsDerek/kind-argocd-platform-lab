@@ -4,6 +4,8 @@ metadata:
   name: deny-privileged-demo
   namespace: tenant-a
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
     - name: app
       image: nginx:1.27-alpine

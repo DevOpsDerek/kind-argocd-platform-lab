@@ -4,6 +4,8 @@ metadata:
   name: deny-missing-resources-demo
   namespace: tenant-b
 spec:
+  securityContext:
+    runAsNonRoot: true
   containers:
     - name: app
       image: nginx:1.27-alpine

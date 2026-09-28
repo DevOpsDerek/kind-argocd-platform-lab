@@ -107,20 +107,22 @@ kubectl apply --dry-run=server -f gitops/platform/examples/kyverno-deny-missing-
 ```
 Expected: allow manifest succeeds; deny manifests are rejected by Kyverno validation.
 
-4. Confirm tenant traffic policy (kind default `kindnet` CNI NetworkPolicy enforcement):
+4. Confirm tenant workloads can be created with the enforced Pod policy:
 ```bash
-kubectl -n tenant-a run tenant-a-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 -- -text=tenant-a
-kubectl -n tenant-a expose pod tenant-a-echo --name echo --port=80 --target-port=5678
-kubectl -n tenant-b run tenant-b-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 -- -text=tenant-b
-kubectl -n tenant-b expose pod tenant-b-echo --name echo --port=80 --target-port=5678
+kubectl -n tenant-a run tenant-a-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 \
+  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true},"containers":[{"name":"tenant-a-echo","resources":{"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}}}]}}' \
+  -- -text=tenant-a
+kubectl -n tenant-a wait --for=condition=Ready pod/tenant-a-echo --timeout=120s
 
-kubectl -n tenant-a run curl-a --rm -it --restart=Never --image=curlimages/curl:8.9.1 --command -- sh -c 'curl -fsS --max-time 3 http://echo.tenant-a.svc.cluster.local'
-kubectl -n tenant-a run curl-cross --rm -it --restart=Never --image=curlimages/curl:8.9.1 --command -- sh -c 'curl -fsS --max-time 3 http://echo.tenant-b.svc.cluster.local'
+kubectl -n tenant-b run tenant-b-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 \
+  --overrides='{"spec":{"securityContext":{"runAsNonRoot":true},"containers":[{"name":"tenant-b-echo","resources":{"requests":{"cpu":"100m","memory":"128Mi"},"limits":{"cpu":"200m","memory":"256Mi"}}}]}}' \
+  -- -text=tenant-b
+kubectl -n tenant-b wait --for=condition=Ready pod/tenant-b-echo --timeout=120s
 ```
-Expected: same-tenant curl succeeds; cross-tenant curl fails/timeouts.
+Expected: both Pods become Ready. This demonstrates policy-compliant tenant workloads; NetworkPolicy enforcement is not included because kind's default `kindnet` CNI does not enforce NetworkPolicy objects.
 
 ### Isolation caveat
-These namespace controls demonstrate practical multi-tenant guardrails for a local lab, but they are **not hard isolation** and are **not equivalent to dedicated clusters**. Cluster-scoped components, node/kernel sharing, and control-plane trust boundaries remain shared.
+These namespace controls demonstrate practical RBAC and admission guardrails for a local lab, but they are **not hard isolation** and are **not equivalent to dedicated clusters**. Cluster-scoped components, node/kernel sharing, and control-plane trust boundaries remain shared.
 
 ## Secret handling
 Do **not** commit plaintext secrets.
