@@ -64,6 +64,64 @@ BOOTSTRAP_REPO_PATH="gitops/root" \
 ./scripts/lab.sh create
 ```
 
+## Namespace tenancy controls (BG-008)
+The platform base now defines two synthetic tenant namespaces:
+- `tenant-a`
+- `tenant-b`
+
+Each tenant namespace gets:
+- dedicated `tenant-admin` ServiceAccount + Role/RoleBinding scoped only to its own namespace
+- `ResourceQuota` (`tenant-quota`)
+- `LimitRange` (`tenant-defaults`)
+- ingress `NetworkPolicy` defaults that allow same-namespace traffic but deny cross-namespace ingress
+
+Kyverno is installed by ArgoCD as a managed Helm chart (`kyverno` Application in `argocd`) and enforces tenant workload guardrails:
+- privileged containers are denied
+- `spec.securityContext.runAsNonRoot=true` is required
+- CPU/memory requests and limits are required
+
+### Reproducible verification checks
+Run these after `bash ./scripts/lab.sh create` completes and ArgoCD has synced.
+
+1. Confirm tenant resources exist:
+```bash
+kubectl get ns tenant-a tenant-b
+kubectl -n tenant-a get sa tenant-admin resourcequota tenant-quota limitrange tenant-defaults
+kubectl -n tenant-b get sa tenant-admin resourcequota tenant-quota limitrange tenant-defaults
+```
+
+2. Confirm RBAC separation:
+```bash
+kubectl auth can-i --as=system:serviceaccount:tenant-a:tenant-admin create pods -n tenant-a
+kubectl auth can-i --as=system:serviceaccount:tenant-a:tenant-admin create pods -n tenant-b
+kubectl auth can-i --as=system:serviceaccount:tenant-b:tenant-admin create pods -n tenant-b
+kubectl auth can-i --as=system:serviceaccount:tenant-b:tenant-admin create pods -n tenant-a
+```
+Expected: `yes`, `no`, `yes`, `no`.
+
+3. Confirm Kyverno allow + deny behavior:
+```bash
+kubectl apply --dry-run=server -f gitops/platform/examples/kyverno-allow-pod.yaml
+kubectl apply --dry-run=server -f gitops/platform/examples/kyverno-deny-privileged-pod.yaml
+kubectl apply --dry-run=server -f gitops/platform/examples/kyverno-deny-missing-resources-pod.yaml
+```
+Expected: allow manifest succeeds; deny manifests are rejected by Kyverno validation.
+
+4. Confirm tenant traffic policy (kind default `kindnet` CNI NetworkPolicy enforcement):
+```bash
+kubectl -n tenant-a run tenant-a-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 -- -text=tenant-a
+kubectl -n tenant-a expose pod tenant-a-echo --name echo --port=80 --target-port=5678
+kubectl -n tenant-b run tenant-b-echo --image=hashicorp/http-echo:1.0 --labels app=echo --port=5678 -- -text=tenant-b
+kubectl -n tenant-b expose pod tenant-b-echo --name echo --port=80 --target-port=5678
+
+kubectl -n tenant-a run curl-a --rm -it --restart=Never --image=curlimages/curl:8.9.1 --command -- sh -c 'curl -fsS --max-time 3 http://echo.tenant-a.svc.cluster.local'
+kubectl -n tenant-a run curl-cross --rm -it --restart=Never --image=curlimages/curl:8.9.1 --command -- sh -c 'curl -fsS --max-time 3 http://echo.tenant-b.svc.cluster.local'
+```
+Expected: same-tenant curl succeeds; cross-tenant curl fails/timeouts.
+
+### Isolation caveat
+These namespace controls demonstrate practical multi-tenant guardrails for a local lab, but they are **not hard isolation** and are **not equivalent to dedicated clusters**. Cluster-scoped components, node/kernel sharing, and control-plane trust boundaries remain shared.
+
 ## Secret handling
 Do **not** commit plaintext secrets.
 
