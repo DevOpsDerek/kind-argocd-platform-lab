@@ -1,0 +1,158 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telemetry-pipeline-dashboard
+  namespace: observability
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    grafana_dashboard: "1"
+data:
+  telemetry-pipeline.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          },
+          "id": 1,
+          "targets": [
+            {
+              "expr": "sum(rate(otelcol_receiver_accepted_spans[5m]))",
+              "legendFormat": "accepted spans/s",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(otelcol_exporter_sent_spans[5m]))",
+              "legendFormat": "exported spans/s",
+              "refId": "B"
+            }
+          ],
+          "title": "OTLP trace flow",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          },
+          "id": 2,
+          "targets": [
+            {
+              "expr": "sum(rate(otelcol_receiver_accepted_metric_points[5m]))",
+              "legendFormat": "accepted metric points/s",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(otelcol_exporter_sent_metric_points[5m]))",
+              "legendFormat": "exported metric points/s",
+              "refId": "B"
+            }
+          ],
+          "title": "OTLP metric flow",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 8
+          },
+          "id": 3,
+          "targets": [
+            {
+              "expr": "sum(rate(otelcol_exporter_send_failed_spans[5m]))",
+              "legendFormat": "failed spans/s",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(otelcol_exporter_send_failed_metric_points[5m]))",
+              "legendFormat": "failed metric points/s",
+              "refId": "B"
+            }
+          ],
+          "title": "Collector export failures",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "id": 4,
+          "targets": [
+            {
+              "expr": "sum(lab_gen)",
+              "legendFormat": "generated workload metric",
+              "refId": "A"
+            }
+          ],
+          "title": "Synthetic workload metric",
+          "type": "timeseries"
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": [
+        "opentelemetry",
+        "platform-lab"
+      ],
+      "time": {
+        "from": "now-30m",
+        "to": "now"
+      },
+      "title": "Local telemetry pipeline",
+      "uid": "local-telemetry-pipeline",
+      "version": 1
+    }

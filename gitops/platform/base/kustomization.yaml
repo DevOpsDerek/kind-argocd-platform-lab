@@ -6,3 +6,8 @@ resources:
   - tenancy.yaml
   - kyverno-application.yaml
   - kyverno-policies.yaml
+  - observability-namespace.yaml
+  - prometheus-application.yaml
+  - otel-collector-application.yaml
+  - observability-workload.yaml
+  - observability-dashboard.yaml
