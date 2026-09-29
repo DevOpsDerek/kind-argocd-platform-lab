@@ -26,7 +26,7 @@ spec:
             - traces
             - --otlp-endpoint=otel-collector.observability.svc.cluster.local:4317
             - --otlp-insecure
-            - --duration=inf
+            - --duration=24h
             - --rate=1
             - --service=lab-checkout
           resources:
@@ -72,9 +72,9 @@ spec:
             - metrics
             - --otlp-endpoint=otel-collector.observability.svc.cluster.local:4317
             - --otlp-insecure
-            - --duration=inf
+            - --duration=24h
             - --rate=1
-            - --service=lab-checkout
+            - --otlp-attributes=service.name=lab-checkout
           resources:
             requests:
               cpu: 25m
