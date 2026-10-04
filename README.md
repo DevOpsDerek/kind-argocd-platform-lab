@@ -129,6 +129,11 @@ The platform deploys a pinned Prometheus/Grafana stack and OpenTelemetry Collect
 
 After `bash ./scripts/lab.sh create` completes and the ArgoCD Applications are healthy, follow the [observability runbook](docs/observability-runbook.md) to verify signal flow, inspect the dashboard, and troubleshoot failures. The path is local-only: traces are written to the collector debug output, and no Azure account, credentials, or live Azure services are required. The runbook maps these signals to Azure Monitor and Application Insights concepts.
 
+## Hosted kind validation (BG-011)
+The `Validate kind lab` GitHub Actions workflow uses a GitHub-hosted runner to lint and render the pinned Argo CD chart, create an ephemeral kind cluster, install Argo CD, and verify GitOps reconciliation and Kyverno policy behavior. It checks that the allowed example is admitted and that both invalid examples are rejected with their policy diagnostics. The workflow deletes the cluster in an `always()` step and requires no self-hosted runner, local cluster, or Azure credentials.
+
+Run `bash ./scripts/validate-policies.sh` after the lab has reconciled to repeat the admission checks locally.
+
 ## Secret handling
 Do **not** commit plaintext secrets.
 
