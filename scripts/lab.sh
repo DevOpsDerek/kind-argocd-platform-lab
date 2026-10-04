@@ -40,7 +40,7 @@ check_min_version() {
 
 kind_cli_version() {
   local output
-  output="$(kind version --short)"
+  output="$(kind version)"
 
   local parsed
   parsed="$(printf "%s" "${output}" | sed -nE 's/.*kind v?([0-9]+\.[0-9]+\.[0-9]+).*/\1/p')"
@@ -61,7 +61,7 @@ check_prerequisites() {
   require_cmd helm
 
   check_min_version "kind" "$(kind_cli_version)" "${MIN_KIND_VERSION}"
-  check_min_version "kubectl" "$(kubectl version --client -o jsonpath='{.clientVersion.gitVersion}' | sed 's/^v//')" "${MIN_KUBECTL_VERSION}"
+  check_min_version "kubectl" "$(kubectl version --client | sed -n 's/^Client Version: v//p')" "${MIN_KUBECTL_VERSION}"
   check_min_version "helm" "$(helm version --template '{{.Version}}' | sed 's/^v//')" "${MIN_HELM_VERSION}"
 }
 
