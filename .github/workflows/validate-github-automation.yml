@@ -1,0 +1,14 @@
+name: Validate GitHub automation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: DevOpsDerek/workflows/.github/workflows/validate-agentic-workflows.yml@dac4b81c298cb3ea6821ea312efa5375f42d5ccb
