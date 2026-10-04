@@ -1,0 +1,86 @@
+name: Validate kind lab
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.16.4
+
+      - uses: helm/kind-action@v1.10.0
+        with:
+          version: v0.23.0
+          kubectl_version: v1.31.0
+          cluster_name: argocd-lab
+          config: kind/kind-config.yaml
+          node_image: kindest/node:v1.31.0
+          ignore_failed_clean: true
+
+      - name: Lint and render the Argo CD chart
+        run: |
+          helm pull oci://ghcr.io/argoproj/argo-helm/argo-cd \
+            --version 7.7.11 \
+            --untar \
+            --untardir "$RUNNER_TEMP"
+          helm lint "$RUNNER_TEMP/argo-cd" --values helm/argocd-values.yaml
+          helm template argocd "$RUNNER_TEMP/argo-cd" \
+            --namespace argocd \
+            --values helm/argocd-values.yaml >/dev/null
+
+      - name: Install Argo CD and reconcile GitOps
+        env:
+          BOOTSTRAP_REPO_URL: >-
+            ${{ github.event.pull_request.head.repo.clone_url ||
+                format('{0}/{1}.git', github.server_url, github.repository) }}
+          BOOTSTRAP_REPO_REVISION: >-
+            ${{ github.event.pull_request.head.sha || github.sha }}
+          BOOTSTRAP_REPO_PATH: gitops/root
+        run: bash ./scripts/lab.sh create
+
+      - name: Wait for all GitOps applications
+        run: |
+          for application in \
+            root-app \
+            kyverno \
+            lab-observability \
+            otel-collector; do
+            kubectl --context kind-argocd-lab -n argocd \
+              wait \
+              --for="jsonpath={.status.sync.status}=Synced" \
+              "application/${application}" \
+              --timeout=300s
+            kubectl --context kind-argocd-lab -n argocd \
+              wait \
+              --for="jsonpath={.status.health.status}=Healthy" \
+              "application/${application}" \
+              --timeout=300s
+          done
+
+      - name: Validate Kyverno policy behavior
+        run: bash ./scripts/validate-policies.sh
+
+      - name: Delete ephemeral kind cluster
+        if: always()
+        run: |
+          if ! command -v kind >/dev/null 2>&1; then
+            echo "kind is not installed; no cluster to delete"
+            exit 0
+          fi
+
+          if kind get clusters | grep -Fxq argocd-lab; then
+            kind delete cluster --name argocd-lab
+          else
+            echo "kind cluster 'argocd-lab' is already absent"
+          fi
