@@ -26,6 +26,7 @@ jobs:
           cluster_name: argocd-lab
           config: kind/kind-config.yaml
           node_image: kindest/node:v1.31.0
+          ignore_failed_clean: true
 
       - name: Lint and render the Argo CD chart
         run: |
